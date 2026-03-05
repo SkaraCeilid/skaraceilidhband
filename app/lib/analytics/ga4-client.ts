@@ -78,6 +78,26 @@ type AccessTokenCache = {
 
 let tokenCache: AccessTokenCache | null = null;
 
+function normalizePrivateKey(raw: string): string {
+  let value = raw.trim();
+
+  // Some hosts store env values wrapped in quotes.
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    value = value.slice(1, -1);
+  }
+
+  // Accept common escaped newline formats from dashboard UIs.
+  value = value.replace(/\\r\\n/g, "\n");
+  value = value.replace(/\\\\n/g, "\n");
+  value = value.replace(/\\n/g, "\n");
+  value = value.replace(/\r\n/g, "\n");
+
+  return value;
+}
+
 function toBase64Url(value: string): string {
   return Buffer.from(value)
     .toString("base64")
@@ -181,7 +201,7 @@ async function resolveGoogleCredentials(): Promise<ResolvedGoogleCredentials | n
   if (clientEmail && privateKeyRaw) {
     return {
       clientEmail,
-      privateKey: privateKeyRaw.replace(/\\n/g, "\n"),
+      privateKey: normalizePrivateKey(privateKeyRaw),
     };
   }
 
