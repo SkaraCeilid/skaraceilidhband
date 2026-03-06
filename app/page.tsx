@@ -52,7 +52,7 @@ export default async function Home() {
 
   return (
     <div id="top" className="min-h-screen bg-[#061a2b] text-white">
-      <SiteHeader />
+      <SiteHeader defaultNavLayoutMode={siteContent.navLayoutMode} />
       <main className="flex w-full flex-1 flex-col">
         <HeroBanner />
         <SectionDivider className="py-6 md:py-8" />
