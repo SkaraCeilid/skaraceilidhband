@@ -48,7 +48,7 @@ export const metadata: Metadata = {
       "Live ceilidh band in Scotland for weddings, parties, and events. High-energy sets with fiddle, pipes, guitar, and drums.",
     images: [
       {
-        url: "/bio-banner.jpg",
+        url: "/thumbnail.png",
         width: 1600,
         height: 980,
         alt: "Skara Ceilidh Band",
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
     title: "Skara Ceilidh Band | Ceilidh Band in Scotland",
     description:
       "Live ceilidh band in Scotland for weddings, parties, and events. Check availability and book your date.",
-    images: ["/bio-banner.jpg"],
+    images: ["/thumbnail.png"],
   },
   robots: {
     index: true,
