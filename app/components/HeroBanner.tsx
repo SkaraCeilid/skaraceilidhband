@@ -10,7 +10,7 @@ export default function HeroBanner() {
         muted
         playsInline
         preload="metadata"
-        poster="/bio-banner.jpg"
+        poster="/thumbnail.png"
       >
         <source media="(min-width: 768px)" src="/hero-strip-the-willow-1080p.mp4" type="video/mp4" />
         <source src="/hero-strip-the-willow-720p.mp4" type="video/mp4" />
