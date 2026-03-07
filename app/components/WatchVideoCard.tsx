@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Image from "next/image";
 
 type WatchVideoCardProps = {
@@ -13,6 +13,13 @@ type WatchVideoCardProps = {
 type YouTubePlayer = {
   destroy: () => void;
   getCurrentTime: () => number;
+  getPlayerState: () => number;
+  isMuted: () => boolean;
+  mute: () => void;
+  unMute: () => void;
+  playVideo: () => void;
+  pauseVideo: () => void;
+  seekTo: (seconds: number, allowSeekAhead?: boolean) => void;
 };
 
 type YouTubeNamespace = {
@@ -34,6 +41,8 @@ declare global {
 
 let youTubeApiPromise: Promise<YouTubeNamespace> | null = null;
 const MOBILE_QUERY = "(max-width: 760px)";
+const YT_STATE_PLAYING = 1;
+const YT_STATE_BUFFERING = 3;
 
 function loadYouTubeIframeApi() {
   if (typeof window === "undefined") {
@@ -122,39 +131,121 @@ export default function WatchVideoCard({
   const [isPlayingInline, setIsPlayingInline] = useState(false);
   const [isPopoutOpen, setIsPopoutOpen] = useState(false);
   const [resumeAtSeconds, setResumeAtSeconds] = useState(0);
-  const [inlinePlayerKey, setInlinePlayerKey] = useState(0);
+  const [inlineAutoplay, setInlineAutoplay] = useState(true);
+  const [inlineMuted, setInlineMuted] = useState(false);
+  const inlinePlayerMountRef = useRef<HTMLDivElement | null>(null);
+  const inlinePlayerRef = useRef<YouTubePlayer | null>(null);
   const modalPlayerMountRef = useRef<HTMLDivElement | null>(null);
   const modalPlayerRef = useRef<YouTubePlayer | null>(null);
 
-  const inlineEmbedSrc = useMemo(() => {
-    const resumeAt = Math.max(0, Math.floor(resumeAtSeconds));
-    return `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&playsinline=1&start=${resumeAt}`;
-  }, [videoId, resumeAtSeconds]);
+  const capturePlayerState = useCallback((player: YouTubePlayer | null) => {
+    const currentTime = player?.getCurrentTime();
+    const playerState = player?.getPlayerState();
+    const playerIsMuted = player?.isMuted();
 
-  const closePopoutToInline = useCallback(() => {
-    const currentTime = modalPlayerRef.current?.getCurrentTime();
     if (typeof currentTime === "number" && Number.isFinite(currentTime)) {
       setResumeAtSeconds(currentTime);
     }
 
+    if (typeof playerState === "number") {
+      const shouldAutoplayInline =
+        playerState === YT_STATE_PLAYING || playerState === YT_STATE_BUFFERING;
+      setInlineAutoplay(shouldAutoplayInline);
+    }
+
+    if (typeof playerIsMuted === "boolean") {
+      setInlineMuted(playerIsMuted);
+    }
+  }, []);
+
+  const closePopoutToInline = useCallback(() => {
+    onActivate(videoId);
+    capturePlayerState(modalPlayerRef.current);
+
     setIsPopoutOpen(false);
     setIsPlayingInline(true);
-    setInlinePlayerKey((value) => value + 1);
-  }, []);
+  }, [capturePlayerState, onActivate, videoId]);
 
   const playInlineInCard = useCallback(() => {
     onActivate(videoId);
     setResumeAtSeconds(0);
+    setInlineAutoplay(true);
+    setInlineMuted(false);
     setIsPopoutOpen(false);
     setIsPlayingInline(true);
-    setInlinePlayerKey((value) => value + 1);
   }, [onActivate, videoId]);
 
   const openPopout = useCallback(() => {
     onActivate(videoId);
-    setIsPlayingInline(false);
+    capturePlayerState(inlinePlayerRef.current);
+    setIsPlayingInline(true);
     setIsPopoutOpen(true);
-  }, [onActivate, videoId]);
+  }, [capturePlayerState, onActivate, videoId]);
+
+  const showInlinePlayer = isActive && isPlayingInline && !isPopoutOpen;
+
+  useEffect(() => {
+    if (!showInlinePlayer) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const setupInlinePlayer = async () => {
+      try {
+        const youTube = await loadYouTubeIframeApi();
+        if (cancelled || !inlinePlayerMountRef.current) {
+          return;
+        }
+
+        const inlinePlayer = new youTube.Player(inlinePlayerMountRef.current, {
+          videoId,
+          playerVars: {
+            autoplay: 1,
+            mute: 1,
+            rel: 0,
+            playsinline: 1,
+            start: Math.max(0, Math.floor(resumeAtSeconds)),
+          },
+        });
+        inlinePlayerRef.current = inlinePlayer;
+
+        window.setTimeout(() => {
+          if (cancelled || inlinePlayerRef.current !== inlinePlayer) {
+            return;
+          }
+
+          const time = Math.max(0, Math.floor(resumeAtSeconds));
+          inlinePlayer.seekTo(time, true);
+
+          if (inlineAutoplay) {
+            if (!inlineMuted) {
+              inlinePlayer.unMute();
+            }
+            inlinePlayer.playVideo();
+            return;
+          }
+
+          inlinePlayer.pauseVideo();
+          if (inlineMuted) {
+            inlinePlayer.mute();
+          } else {
+            inlinePlayer.unMute();
+          }
+        }, 250);
+      } catch {
+        setIsPlayingInline(false);
+      }
+    };
+
+    setupInlinePlayer();
+
+    return () => {
+      cancelled = true;
+      inlinePlayerRef.current?.destroy();
+      inlinePlayerRef.current = null;
+    };
+  }, [inlineAutoplay, inlineMuted, resumeAtSeconds, showInlinePlayer, videoId]);
 
   useEffect(() => {
     if (!isPopoutOpen || !isActive) {
@@ -173,7 +264,8 @@ export default function WatchVideoCard({
         modalPlayerRef.current = new youTube.Player(modalPlayerMountRef.current, {
           videoId,
           playerVars: {
-            autoplay: 1,
+            autoplay: inlineAutoplay ? 1 : 0,
+            mute: inlineMuted ? 1 : 0,
             rel: 0,
             playsinline: 1,
             start: Math.max(0, Math.floor(resumeAtSeconds)),
@@ -182,7 +274,6 @@ export default function WatchVideoCard({
       } catch {
         setIsPopoutOpen(false);
         setIsPlayingInline(true);
-        setInlinePlayerKey((value) => value + 1);
       }
     };
 
@@ -193,7 +284,7 @@ export default function WatchVideoCard({
       modalPlayerRef.current?.destroy();
       modalPlayerRef.current = null;
     };
-  }, [isActive, isPopoutOpen, resumeAtSeconds, videoId]);
+  }, [inlineAutoplay, inlineMuted, isActive, isPopoutOpen, resumeAtSeconds, videoId]);
 
   useEffect(() => {
     if (!isPopoutOpen || !isActive) {
@@ -219,12 +310,12 @@ export default function WatchVideoCard({
 
   useEffect(() => {
     return () => {
+      inlinePlayerRef.current?.destroy();
+      inlinePlayerRef.current = null;
       modalPlayerRef.current?.destroy();
       modalPlayerRef.current = null;
     };
   }, []);
-
-  const showInlinePlayer = isActive && isPlayingInline && !isPopoutOpen;
 
   return (
     <article className="watch-card" aria-label={title}>
@@ -240,14 +331,10 @@ export default function WatchVideoCard({
               Pop out
             </button>
           ) : null}
-          <iframe
-            key={inlinePlayerKey}
+          <div
+            ref={inlinePlayerMountRef}
             className="watch-card__iframe"
-            src={inlineEmbedSrc}
-            title={title}
-            loading="lazy"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            allowFullScreen
+            aria-label={title}
           />
         </div>
       ) : (

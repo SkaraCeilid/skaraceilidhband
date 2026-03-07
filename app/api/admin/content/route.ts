@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getSiteContent, saveSiteContent } from "@/app/lib/site-content";
 
 export async function GET() {
@@ -25,6 +26,7 @@ export async function PUT(request: Request) {
 
   try {
     const content = await saveSiteContent(payload);
+    revalidatePath("/");
     return NextResponse.json({ content });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to save content to Supabase.";

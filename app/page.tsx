@@ -8,6 +8,8 @@ import BookingsSection from "./components/BookingsSection";
 import SectionDivider from "./components/SectionDivider";
 import { getSiteContent } from "./lib/site-content";
 
+export const dynamic = "force-dynamic";
+
 const socialLinks = [
   {
     name: "Facebook",
