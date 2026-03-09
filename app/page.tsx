@@ -5,6 +5,7 @@ import WatchSection from "./components/WatchSection";
 import WhySkaraSection from "./components/WhySkaraSection";
 import MentionsSection from "./components/MentionsSection";
 import BookingsSection from "./components/BookingsSection";
+import CookieSettingsLink from "./components/CookieSettingsLink";
 import SectionDivider from "./components/SectionDivider";
 import { getSiteContent } from "./lib/site-content";
 
@@ -82,6 +83,7 @@ export default async function Home() {
             info@skaraceilidh.com
           </a>
         </p>
+        <CookieSettingsLink />
         <div className="mt-6 flex items-center justify-center gap-3">
           {socialLinks.map((social) => (
             <a

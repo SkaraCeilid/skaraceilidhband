@@ -7,6 +7,11 @@
     "icons":  [
                   {
                       "type":  "image/png",
+                      "sizes":  "48x48",
+                      "src":  "/favicon-48x48.png"
+                  },
+                  {
+                      "type":  "image/png",
                       "sizes":  "32x32",
                       "src":  "/favicon-32x32.png"
                   },
