@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { withAdminApiAuth } from "@/app/lib/admin/auth";
 import type {
   ResolvedDateRange,
   WidgetErrorResponse,
@@ -29,36 +30,38 @@ export async function createWidgetHandlerResponse<TData>(
   request: Request,
   widgetId: string,
   query: QueryHandler<TData>
-): Promise<NextResponse<WidgetSuccessResponse<TData> | WidgetErrorResponse>> {
-  let range: ResolvedDateRange;
+): Promise<NextResponse> {
+  return withAdminApiAuth(request, async () => {
+    let range: ResolvedDateRange;
 
-  try {
-    const url = new URL(request.url);
-    range = resolveDateRange(url.searchParams);
-  } catch (error) {
-    const response = toWidgetErrorResponse(error);
-    return NextResponse.json(response, { status: 400 });
-  }
+    try {
+      const url = new URL(request.url);
+      range = resolveDateRange(url.searchParams);
+    } catch (error) {
+      const response = toWidgetErrorResponse(error);
+      return NextResponse.json(response, { status: 400 });
+    }
 
-  const clientResult = await createGa4Client();
-  if (!clientResult.configured) {
-    return NextResponse.json(clientResult, { status: 503 });
-  }
+    const clientResult = await createGa4Client();
+    if (!clientResult.configured) {
+      return NextResponse.json(clientResult, { status: 503 });
+    }
 
-  const cacheKey = `${widgetId}:${range.cacheKey}`;
+    const cacheKey = `${widgetId}:${range.cacheKey}`;
 
-  try {
-    const payload = await withAnalyticsCache(cacheKey, () => query(clientResult.client, range));
+    try {
+      const payload = await withAnalyticsCache(cacheKey, () => query(clientResult.client, range));
 
-    return NextResponse.json({
-      configured: true,
-      range: withRangeSummary(range),
-      keyEvents: clientResult.client.keyEvents,
-      data: payload.data,
-      examplePayloads: payload.examplePayloads,
-    });
-  } catch (error) {
-    const response = toWidgetErrorResponse(error);
-    return NextResponse.json(response, { status: 500 });
-  }
+      return NextResponse.json({
+        configured: true,
+        range: withRangeSummary(range),
+        keyEvents: clientResult.client.keyEvents,
+        data: payload.data,
+        examplePayloads: payload.examplePayloads,
+      } satisfies WidgetSuccessResponse<TData>);
+    } catch (error) {
+      const response = toWidgetErrorResponse(error);
+      return NextResponse.json(response, { status: 500 });
+    }
+  });
 }

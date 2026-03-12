@@ -3,9 +3,15 @@
 import Image from "next/image";
 import { useRef, useState } from "react";
 
+const fallbackHeroVideoSrc = "/hero-strip-the-willow-720p.optimized.mp4";
+const defaultHeroVideoSrc =
+  "https://pub-9be083b820034f6ca6f0848c01c0eae9.r2.dev/hero-strip-the-willow-no-first-2-frames.mp4";
+const primaryHeroVideoSrc = process.env.NEXT_PUBLIC_HERO_VIDEO_URL?.trim() || defaultHeroVideoSrc;
+
 export default function HeroBanner() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isMuted, setIsMuted] = useState(true);
+  const [activeVideoSrc, setActiveVideoSrc] = useState(primaryHeroVideoSrc);
 
   const toggleSound = () => {
     const video = videoRef.current;
@@ -17,7 +23,7 @@ export default function HeroBanner() {
     video.muted = shouldMute;
     setIsMuted(shouldMute);
 
-    if (!shouldMute) {
+    if (!shouldMute && video.paused) {
       void video.play().catch(() => {
         video.muted = true;
         setIsMuted(true);
@@ -25,26 +31,29 @@ export default function HeroBanner() {
     }
   };
 
+  const handleVideoError = () => {
+    if (activeVideoSrc !== fallbackHeroVideoSrc) {
+      setActiveVideoSrc(fallbackHeroVideoSrc);
+    }
+  };
+
   return (
-    <section className="relative h-[100svh] w-full overflow-hidden md:h-screen" aria-label="Hero banner video">
+    <section className="relative h-[100svh] h-[100dvh] w-full overflow-hidden md:h-screen" aria-label="Hero banner video">
       <video
+        key={activeVideoSrc}
         ref={videoRef}
         className="hero-video absolute inset-0"
         autoPlay
         loop
         muted={isMuted}
         playsInline
-        preload="metadata"
+        preload="auto"
         poster="/thumbnail.png"
+        onError={handleVideoError}
       >
-        <source
-          media="(min-width: 768px)"
-          src="https://pub-9be083b820034f6ca6f0848c01c0eae9.r2.dev/hero-strip-the-willow-no-first-2-frames.mp4"
-          type="video/mp4"
-        />
-        <source src="/hero-strip-the-willow-full-720p.mp4" type="video/mp4" />
+        <source src={activeVideoSrc} type="video/mp4" />
       </video>
-      <div className="hero-scrim pointer-events-none absolute inset-0" aria-hidden="true" />
+      <div className="hero-scrim pointer-events-none absolute inset-x-0 top-0 -bottom-px" aria-hidden="true" />
 
       <div className="relative z-10 mx-auto flex h-full w-full max-w-[1400px] items-center px-6 pt-14 md:px-12 md:pt-16 lg:pt-20">
         <div className="hero-content pointer-events-auto max-w-[760px]">

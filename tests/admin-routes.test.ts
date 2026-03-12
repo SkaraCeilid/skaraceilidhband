@@ -1,4 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@/app/lib/admin/auth", () => ({
+  withAdminApiAuth: vi.fn(async (_request: Request, handler: () => Promise<Response>) => handler()),
+}));
+
 import { PUT as putContent } from "@/app/api/admin/content/route";
 import { PUT as putNavLayout } from "@/app/api/admin/nav-layout/route";
 import { GET as getKpis } from "@/app/api/admin/analytics/kpis/route";

@@ -75,13 +75,13 @@ export const homepageContent: HomepageContent = {
       "Individually, the band members tour internationally with leading artists including Nathan Evans & Saint PHNX, Skipinnish, and Norrie MacIver, and the line-up features finalists from the prestigious BBC Radio Scotland Young Traditional Musician of the Year.",
       "Blending traditional Scottish tunes with a powerful modern rhythm section, Skara's energetic live sound creates a vibrant dance-floor atmosphere and a truly memorable night.",
     ],
-    imageSrc: "/88137320_1099872080375116_8320782486346924032_n.jpg",
-    imageAlt: "Skara Ceilidh Band performing live",
+    imageSrc: "/bio%20pic.JPG",
+    imageAlt: "Skara Ceilidh Band members posing with their instruments",
   },
   media: {
     eyebrow: "Media",
     heading: "Media",
-    subtitle: "Latest Skara Ceilidh Band performances from the official YouTube channel.",
+    subtitle: "Skara Ceilidh Band performances from the official YouTube channel.",
   },
   services: {
     eyebrow: "Services",

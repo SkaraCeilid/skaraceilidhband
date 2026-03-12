@@ -170,13 +170,14 @@ export default function WatchVideoCard({
   }, [capturePlayerState, onActivate, videoId]);
 
   const playInlineInCard = useCallback(() => {
+    const shouldStartMuted = isMobile;
     onActivate(videoId);
     setResumeAtSeconds(0);
     setInlineAutoplay(true);
-    setInlineMuted(false);
+    setInlineMuted(shouldStartMuted);
     setIsPopoutOpen(false);
     setIsPlayingInline(true);
-  }, [onActivate, videoId]);
+  }, [isMobile, onActivate, videoId]);
 
   const openPopout = useCallback(() => {
     onActivate(videoId);
@@ -205,14 +206,18 @@ export default function WatchVideoCard({
           videoId,
           playerVars: {
             autoplay: 1,
-            mute: 1,
+            mute: inlineMuted ? 1 : 0,
             rel: 0,
             playsinline: 1,
             start: Math.max(0, Math.floor(resumeAtSeconds)),
           },
           events: {
             onReady: ({ target }) => {
-              if (cancelled || inlinePlayerRef.current !== target) {
+              if (cancelled) {
+                return;
+              }
+
+              if (inlinePlayerRef.current && inlinePlayerRef.current !== target) {
                 return;
               }
 
@@ -220,7 +225,9 @@ export default function WatchVideoCard({
               target.seekTo(time, true);
 
               if (inlineAutoplay) {
-                if (!inlineMuted) {
+                if (inlineMuted) {
+                  target.mute();
+                } else {
                   target.unMute();
                 }
                 target.playVideo();

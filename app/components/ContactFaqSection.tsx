@@ -3,6 +3,7 @@
 import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
 import type { ContactContent, FaqItem } from "@/app/lib/homepage-content";
+import { buildBookingMailtoHref } from "@/app/lib/booking-mailto";
 
 type ContactFaqSectionProps = {
   contact: ContactContent;
@@ -32,7 +33,6 @@ function startOfTodayLocal(): Date {
 }
 
 export default function ContactFaqSection({ contact, faqs }: ContactFaqSectionProps) {
-  const formName = "booking-enquiry";
   const today = useMemo(() => startOfTodayLocal(), []);
   const todayISO = useMemo(() => formatISODateLocal(today), [today]);
 
@@ -87,27 +87,42 @@ export default function ContactFaqSection({ contact, faqs }: ContactFaqSectionPr
     setNotice(null);
     setSubmitting(true);
 
-    const payload = new URLSearchParams({
-      "form-name": formName,
-      name: name.trim(),
-      email: email.trim(),
-      phone: phone.trim(),
-      date: selectedISO,
-      eventType: eventType.trim(),
-      location: location.trim(),
-      message: message.trim(),
-      "bot-field": botField,
-    });
-
     try {
-      const response = await fetch("/__forms.html", {
+      const response = await fetch("/api/enquiries", {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: payload.toString(),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          date: selectedISO,
+          eventType: eventType.trim(),
+          location: location.trim(),
+          message: message.trim(),
+          botField,
+          source: "contact-faq-section",
+        }),
       });
 
       if (!response.ok) {
-        setNotice("We could not send that enquiry. Please try again or email us directly.");
+        const body = (await response.json().catch(() => null)) as { error?: string } | null;
+        if (response.status === 503 && body?.error?.includes("configured yet")) {
+          setNotice("Our online form is temporarily offline. Opening your email app instead.");
+          window.location.assign(
+            buildBookingMailtoHref({
+              name: name.trim(),
+              email: email.trim(),
+              phone: phone.trim(),
+              date: selectedISO,
+              eventType: eventType.trim(),
+              location: location.trim(),
+              message: message.trim(),
+              source: "contact-faq-section",
+            })
+          );
+          return;
+        }
+        setNotice(body?.error ?? "We could not send that enquiry. Please try again or email us directly.");
         return;
       }
 
@@ -139,12 +154,10 @@ export default function ContactFaqSection({ contact, faqs }: ContactFaqSectionPr
           <form
             className="contact-form-card"
             data-testid="contact-form-card"
-            name={formName}
             method="POST"
             onSubmit={onSubmit}
             aria-label="Contact form"
           >
-            <input type="hidden" name="form-name" value={formName} />
             <p hidden>
               <label>
                 Do not fill this out:{" "}

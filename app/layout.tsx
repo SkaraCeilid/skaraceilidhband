@@ -20,6 +20,35 @@ const outfitDisplay = Outfit({
   display: "swap",
 });
 
+const homeReloadScrollResetScript = `
+  (function () {
+    if (window.location.pathname !== "/") {
+      return;
+    }
+
+    try {
+      if ("scrollRestoration" in window.history) {
+        window.history.scrollRestoration = "manual";
+      }
+
+      var navigationEntry = window.performance.getEntriesByType("navigation")[0];
+      var navigationType = navigationEntry && "type" in navigationEntry ? navigationEntry.type : "";
+
+      if (navigationType !== "reload") {
+        return;
+      }
+
+      if (window.location.hash) {
+        window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      }
+
+      window.scrollTo(0, 0);
+    } catch {
+      window.scrollTo(0, 0);
+    }
+  })();
+`;
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://skaraceilidh.com"),
   title: {
@@ -84,6 +113,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <script
+          id="home-reload-scroll-reset"
+          dangerouslySetInnerHTML={{ __html: homeReloadScrollResetScript }}
+        />
         <link rel="icon" type="image/x-icon" href="/favicon.ico" />
         <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />

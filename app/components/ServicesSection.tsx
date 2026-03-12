@@ -26,7 +26,7 @@ const SERVICE_CARDS: ServiceCard[] = [
     key: "ceilidhs",
     title: "Ceilidhs",
     summary: "Full ceilidh experience",
-    Icon: MusicIcon,
+    Icon: CeilidhIcon,
   },
   {
     key: "backgroundMusic",
@@ -44,54 +44,56 @@ const SERVICE_CARDS: ServiceCard[] = [
     key: "bagpiper",
     title: "Bagpiper",
     summary: "Traditional Scottish pipes",
-    Icon: WindIcon,
+    Icon: BagpiperIcon,
   },
 ];
 
 const BACKGROUND_MUSIC_IMAGE = "/59759789_858220537873606_773378478769700864_n.jpg";
+const BACKGROUND_MUSIC_ICON_IMAGE = "/background music icon.PNG";
+const DJ_ICON_IMAGE = "/dj icon.PNG";
 
-function MusicIcon({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
-      <path
-        fill="currentColor"
-        d="M14 3.5v9.8a3.6 3.6 0 1 1-1.7-3.1V6l6.7-1.5v7a3.6 3.6 0 1 1-1.7-3.1V3.5H14ZM8.4 11.9a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm7 1.3a2 2 2 0 1 0 0 4 2 2 0 0 0 0-4Z"
-      />
-    </svg>
-  );
+function CeilidhIcon({ className }: IconProps) {
+  const iconClassName = className ? `${className} services-icon--ceilidh` : "services-icon--ceilidh";
+
+  return <span aria-hidden="true" className={iconClassName} />;
 }
 
 function HeadphonesIcon({ className }: IconProps) {
+  const iconClassName = className
+    ? `${className} services-icon--background-music`
+    : "services-icon--background-music";
+
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
-      <path
-        fill="currentColor"
-        d="M12 4a8 8 0 0 0-8 8v5.3a2.7 2.7 0 0 0 5.4 0v-3.7A2.6 2.6 0 0 0 6.8 11a2 2 0 0 0-.8.1A6 6 0 0 1 18 11a2 2 0 0 0-.8-.1 2.6 2.6 0 0 0-2.6 2.6v3.7a2.7 2.7 0 1 0 5.4 0V12a8 8 0 0 0-8-8Z"
-      />
-    </svg>
+    <Image
+      src={BACKGROUND_MUSIC_ICON_IMAGE}
+      alt=""
+      aria-hidden="true"
+      width={699}
+      height={700}
+      className={iconClassName}
+    />
   );
 }
 
 function DiscIcon({ className }: IconProps) {
+  const iconClassName = className ? `${className} services-icon--dj-disco` : "services-icon--dj-disco";
+
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
-      <path
-        fill="currentColor"
-        d="M12 4.8a7.2 7.2 0 1 0 0 14.4 7.2 7.2 0 0 0 0-14.4Zm0 1.8a5.4 5.4 0 1 1 0 10.8A5.4 5.4 0 0 1 12 6.6Zm0 2.4a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm0 1.8a1.2 1.2 0 1 1 0 2.4 1.2 1.2 0 0 1 0-2.4ZM4.3 12a.9.9 0 0 0 .9.9h1.6a.9.9 0 1 0 0-1.8H5.2a.9.9 0 0 0-.9.9Zm13 0a.9.9 0 0 0 .9.9h1.6a.9.9 0 1 0 0-1.8h-1.6a.9.9 0 0 0-.9.9Z"
-      />
-    </svg>
+    <Image
+      src={DJ_ICON_IMAGE}
+      alt=""
+      aria-hidden="true"
+      width={731}
+      height={575}
+      className={iconClassName}
+    />
   );
 }
 
-function WindIcon({ className }: IconProps) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
-      <path
-        fill="currentColor"
-        d="M3 8h10.8a2.2 2.2 0 1 0-2.2-2.2.9.9 0 1 1-1.8 0 4 4 0 1 1 4 4H3a.9.9 0 0 1 0-1.8Zm0 4.3h15a2.2 2.2 0 1 1 0 4.4h-1.8a.9.9 0 1 1 0-1.8H18a.4.4 0 0 0 0-.8H3a.9.9 0 0 1 0-1.8Zm0 4.3h9.4a2.2 2.2 0 1 1 0 4.4h-1.1a.9.9 0 1 1 0-1.8h1.1a.4.4 0 0 0 0-.8H3a.9.9 0 0 1 0-1.8Z"
-      />
-    </svg>
-  );
+function BagpiperIcon({ className }: IconProps) {
+  const iconClassName = className ? `${className} services-icon--bagpiper` : "services-icon--bagpiper";
+
+  return <span aria-hidden="true" className={iconClassName} />;
 }
 
 function CheckCircleIcon({ className }: IconProps) {
@@ -148,7 +150,7 @@ function ServiceDetail({ service, content }: { service: ServiceKey; content: Ser
     return (
       <div className="services-detail__grid">
         <div className="services-detail__content">
-          <DetailHeading title="Ceilidhs" Icon={MusicIcon} />
+          <DetailHeading title="Ceilidhs" Icon={CeilidhIcon} />
           <p className="services-detail__text">{content.ceilidhs.intro}</p>
           <p className="services-detail__text">{content.ceilidhs.teaching}</p>
           <h4 className="services-detail__label">Perfect For</h4>
@@ -187,7 +189,6 @@ function ServiceDetail({ service, content }: { service: ServiceKey; content: Ser
               sizes="(max-width: 1023px) 100vw, 44vw"
               className="services-detail__media-image"
             />
-            <figcaption className="services-detail__media-caption">Live at a recent wedding</figcaption>
           </figure>
         </aside>
       </div>
@@ -226,7 +227,7 @@ function ServiceDetail({ service, content }: { service: ServiceKey; content: Ser
   return (
     <div className="services-detail__grid services-detail__grid--bagpiper">
       <div className="services-detail__content">
-        <DetailHeading title="Bagpiper" Icon={WindIcon} />
+        <DetailHeading title="Bagpiper" Icon={BagpiperIcon} />
         <p className="services-detail__text">{content.bagpiper.intro}</p>
         <p className="services-detail__text">Fully tailored to your event requirements.</p>
         <h4 className="services-detail__label">Wedding Options</h4>
@@ -234,7 +235,7 @@ function ServiceDetail({ service, content }: { service: ServiceKey; content: Ser
       </div>
 
       <aside className="services-detail__aside services-detail__aside--symbol">
-        <WindIcon className="services-detail__symbol-icon" />
+        <BagpiperIcon className="services-detail__symbol-icon" />
         <p className="services-detail__symbol-text">Fully tailored to your event</p>
       </aside>
     </div>
@@ -249,6 +250,7 @@ export default function ServicesSection({ content }: ServicesSectionProps) {
     <section id="services" className="services-section" aria-label="Services">
       <div className="services-section__inner">
         <header className="services-section__header">
+          <p className="services-section__eyebrow">{content.eyebrow}</p>
           <h2 className="services-section__title">{content.heading}</h2>
           <p className="services-section__subtitle">{content.subtitle}</p>
         </header>

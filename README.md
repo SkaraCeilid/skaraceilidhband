@@ -186,6 +186,40 @@ npm run dev
 
 Open `http://localhost:3000/admin`.
 
+## Booking Enquiry Form Setup
+
+The `/api/enquiries` route sends booking emails through Zoho Mail.
+
+Set these server-side variables before using the enquiry form:
+
+```env
+ZOHO_CLIENT_ID=...
+ZOHO_CLIENT_SECRET=...
+ZOHO_REFRESH_TOKEN=...
+ZOHO_ACCOUNT_ID=...
+BOOKING_EMAIL_TO=info@skaraceilidh.com
+```
+
+Optional:
+
+```env
+ZOHO_FROM_EMAIL=info@skaraceilidh.com
+```
+
+If `ZOHO_FROM_EMAIL` is not set, the app uses `BOOKING_EMAIL_TO` as the sender address.
+
+For Cloudflare Workers deployments, add them as Worker secrets before deploy:
+
+```bash
+npx wrangler secret put ZOHO_CLIENT_ID
+npx wrangler secret put ZOHO_CLIENT_SECRET
+npx wrangler secret put ZOHO_REFRESH_TOKEN
+npx wrangler secret put ZOHO_ACCOUNT_ID
+npx wrangler secret put BOOKING_EMAIL_TO
+```
+
+If these values are missing, the site falls back to opening the visitor's email client with a prefilled enquiry draft.
+
 ## Supabase Login (Admin Protection)
 
 This project now protects:

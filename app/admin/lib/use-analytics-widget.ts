@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import type {
   AnalyticsPlaceholders,
   DateRangeInput,
@@ -132,6 +133,7 @@ export function useAnalyticsWidget<TData>(
   range: DateRangeInput,
   refreshNonce: number
 ): AnalyticsWidgetState<TData> {
+  const router = useRouter();
   const cacheKey = useMemo(() => makeCacheKey(endpoint, range), [endpoint, range]);
 
   const [requestState, setRequestState] = useState<RequestState<TData>>(() => {
@@ -158,6 +160,11 @@ export function useAnalyticsWidget<TData>(
 
     fetch(cacheKey, { cache: "no-store", signal: controller.signal })
       .then(async (response) => {
+        if (response.status === 401) {
+          router.push("/login?redirectTo=/admin&error=session-expired");
+          return;
+        }
+
         const responseText = await response.text();
         const parsed = parseResponseBody(responseText) as WidgetResponse<TData> | null;
 
@@ -197,7 +204,7 @@ export function useAnalyticsWidget<TData>(
       isActive = false;
       controller.abort();
     };
-  }, [cacheKey, refreshNonce]);
+  }, [cacheKey, refreshNonce, router]);
 
   if (responseForKey) {
     return toLoadedState(responseForKey);

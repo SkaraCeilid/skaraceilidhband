@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import type { NavLayoutMode } from "@/app/lib/site-content";
 
 const navItems = [
@@ -12,8 +12,11 @@ const navItems = [
   { label: "FAQs", href: "#faqs" },
   { label: "Reviews", href: "#reviews" },
   { label: "Contact", href: "#contact" },
-];
+] as const;
 const fadeRange = 120;
+
+type NavHref = (typeof navItems)[number]["href"];
+const navHrefs = new Set<NavHref>(navItems.map((item) => item.href));
 
 type SiteHeaderProps = {
   defaultNavLayoutMode?: NavLayoutMode;
@@ -23,6 +26,7 @@ export default function SiteHeader({ defaultNavLayoutMode = "hamburger" }: SiteH
   const headerRef = useRef<HTMLElement | null>(null);
   const mobileMenuRef = useRef<HTMLElement | null>(null);
   const frameRef = useRef<number | null>(null);
+  const pendingNavigationRef = useRef<NavHref | null>(null);
   const [isDesktopNavEnabled, setIsDesktopNavEnabled] = useState(defaultNavLayoutMode === "full");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const lockedScrollY = useRef(0);
@@ -80,6 +84,55 @@ export default function SiteHeader({ defaultNavLayoutMode = "hamburger" }: SiteH
     };
   }, []);
 
+  const syncAddressBar = (href: NavHref) => {
+    const nextUrl =
+      href === "#top" ? `${window.location.pathname}${window.location.search}` : href;
+    const historyMethod =
+      href === "#top" || window.location.hash === href ? "replaceState" : "pushState";
+
+    window.history[historyMethod](null, "", nextUrl);
+  };
+
+  const scrollToSection = (href: NavHref, { behavior = "smooth" }: { behavior?: ScrollBehavior } = {}) => {
+    if (href === "#top") {
+      syncAddressBar(href);
+      window.scrollTo({ top: 0, behavior });
+      return;
+    }
+
+    const target = document.getElementById(href.slice(1));
+    if (!target) {
+      return;
+    }
+
+    syncAddressBar(href);
+    target.scrollIntoView({ behavior, block: "start" });
+  };
+  const scrollToSectionRef = useRef(scrollToSection);
+
+  useEffect(() => {
+    scrollToSectionRef.current = scrollToSection;
+  });
+
+  const handleNavRequest = (href: NavHref) => {
+    if (isMenuOpen) {
+      pendingNavigationRef.current = href;
+      setIsMenuOpen(false);
+      return;
+    }
+
+    scrollToSection(href);
+  };
+
+  const handleNavClick = (event: MouseEvent<HTMLAnchorElement>, href: NavHref) => {
+    if (event.button !== 0 || event.metaKey || event.altKey || event.ctrlKey || event.shiftKey) {
+      return;
+    }
+
+    event.preventDefault();
+    handleNavRequest(href);
+  };
+
   useEffect(() => {
     const body = document.body;
     const html = document.documentElement;
@@ -135,6 +188,29 @@ export default function SiteHeader({ defaultNavLayoutMode = "hamburger" }: SiteH
   }, [isMenuOpen]);
 
   useEffect(() => {
+    if (isMenuOpen || !pendingNavigationRef.current) {
+      return;
+    }
+
+    const pendingNavigation = pendingNavigationRef.current;
+    pendingNavigationRef.current = null;
+
+    let secondFrame: number | null = null;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        scrollToSectionRef.current(pendingNavigation, { behavior: "smooth" });
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      if (secondFrame !== null) {
+        window.cancelAnimationFrame(secondFrame);
+      }
+    };
+  }, [isMenuOpen]);
+
+  useEffect(() => {
     if (!isMenuOpen) {
       return;
     }
@@ -184,17 +260,33 @@ export default function SiteHeader({ defaultNavLayoutMode = "hamburger" }: SiteH
     setIsMenuOpen(false);
   }, [isDesktopNavEnabled]);
 
-  const handleMobileLinkClick = (href: string) => {
-    setIsMenuOpen(false);
+  useEffect(() => {
+    const syncScrollWithLocation = () => {
+      const href = window.location.hash || "#top";
+      if (!navHrefs.has(href as NavHref)) {
+        return;
+      }
 
-    if (href === "#top") {
-      window.requestAnimationFrame(() => {
-        window.requestAnimationFrame(() => {
-          window.scrollTo({ top: 0, behavior: "smooth" });
-        });
-      });
+      scrollToSectionRef.current(href as NavHref, { behavior: "auto" });
+    };
+
+    let timeoutId: number | null = null;
+    if (window.location.hash) {
+      timeoutId = window.setTimeout(syncScrollWithLocation, 0);
     }
-  };
+
+    const onPopState = () => {
+      syncScrollWithLocation();
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return () => {
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+      window.removeEventListener("popstate", onPopState);
+    };
+  }, []);
 
   return (
     <header
@@ -202,7 +294,12 @@ export default function SiteHeader({ defaultNavLayoutMode = "hamburger" }: SiteH
       className={`site-header ${isDesktopNavEnabled ? "site-header--desktop-nav" : "site-header--hamburger-only"}`}
     >
       <div className="site-header__inner">
-        <a href="#top" aria-label="Skara Home" className="site-header__logo">
+        <a
+          href="#top"
+          aria-label="Skara Home"
+          className="site-header__logo"
+          onClick={(event) => handleNavClick(event, "#top")}
+        >
           <Image
             src="/logo white lite.png"
             alt="Skara logo"
@@ -220,6 +317,7 @@ export default function SiteHeader({ defaultNavLayoutMode = "hamburger" }: SiteH
               className="site-nav__link"
               data-track-button="true"
               data-track-label={item.label}
+              onClick={(event) => handleNavClick(event, item.href)}
             >
               {item.label}
             </a>
@@ -229,6 +327,7 @@ export default function SiteHeader({ defaultNavLayoutMode = "hamburger" }: SiteH
             className="site-nav__cta"
             data-track-button="true"
             data-track-label="Book Now"
+            onClick={(event) => handleNavClick(event, "#contact")}
           >
             Book Now
           </a>
@@ -276,7 +375,7 @@ export default function SiteHeader({ defaultNavLayoutMode = "hamburger" }: SiteH
               className="site-nav__mobile-link"
               data-track-button="true"
               data-track-label={item.label}
-              onClick={() => handleMobileLinkClick(item.href)}
+              onClick={(event) => handleNavClick(event, item.href)}
             >
               {item.label}
             </a>
@@ -286,7 +385,7 @@ export default function SiteHeader({ defaultNavLayoutMode = "hamburger" }: SiteH
             className="site-nav__mobile-cta"
             data-track-button="true"
             data-track-label="Book Now"
-            onClick={() => setIsMenuOpen(false)}
+            onClick={(event) => handleNavClick(event, "#contact")}
           >
             Book Now
           </a>

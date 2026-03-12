@@ -56,10 +56,10 @@ export default function BioBanner({ about }: BioBannerProps) {
 
         <div className="about-section__media">
           <Image
-            src="/88137320_1099872080375116_8320782486346924032_n.jpg"
-            alt="Skara band members with instruments"
-            width={1024}
-            height={768}
+            src="/bio%20pic.JPG"
+            alt="Skara Ceilidh Band members posing with their instruments"
+            width={1441}
+            height={1077}
             sizes="(max-width: 1023px) 100vw, 62vw"
             className="about-section__image"
           />

@@ -2,6 +2,7 @@
 
 import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
+import { buildBookingMailtoHref } from "@/app/lib/booking-mailto";
 
 function pad2(n: number) {
   return String(n).padStart(2, "0");
@@ -23,7 +24,6 @@ function startOfTodayLocal() {
 }
 
 export default function BookingsSection() {
-  const FORM_NAME = "booking-enquiry";
   const today = useMemo(() => startOfTodayLocal(), []);
   const todayISO = useMemo(() => formatISODateLocal(today), [today]);
 
@@ -72,27 +72,42 @@ export default function BookingsSection() {
     setNotice(null);
     setSubmitting(true);
 
-    const payload = new URLSearchParams({
-      "form-name": FORM_NAME,
-      name: name.trim(),
-      email: email.trim(),
-      phone: phone.trim(),
-      date: selectedISO,
-      eventType: eventType.trim(),
-      location: location.trim(),
-      message: message.trim(),
-      "bot-field": botField,
-    });
-
     try {
-      const response = await fetch("/__forms.html", {
+      const response = await fetch("/api/enquiries", {
         method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: payload.toString(),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          date: selectedISO,
+          eventType: eventType.trim(),
+          location: location.trim(),
+          message: message.trim(),
+          botField,
+          source: "bookings-section",
+        }),
       });
 
       if (!response.ok) {
-        setNotice("We could not send that enquiry. Please try again or email us directly.");
+        const body = (await response.json().catch(() => null)) as { error?: string } | null;
+        if (response.status === 503 && body?.error?.includes("configured yet")) {
+          setNotice("Our online form is temporarily offline. Opening your email app instead.");
+          window.location.assign(
+            buildBookingMailtoHref({
+              name: name.trim(),
+              email: email.trim(),
+              phone: phone.trim(),
+              date: selectedISO,
+              eventType: eventType.trim(),
+              location: location.trim(),
+              message: message.trim(),
+              source: "bookings-section",
+            })
+          );
+          return;
+        }
+        setNotice(body?.error ?? "We could not send that enquiry. Please try again or email us directly.");
         return;
       }
 
@@ -123,12 +138,10 @@ export default function BookingsSection() {
         <div className="bookingGrid">
           <form
             className="bookingForm"
-            name={FORM_NAME}
             method="POST"
             onSubmit={onSubmit}
             aria-label="Booking form"
           >
-            <input type="hidden" name="form-name" value={FORM_NAME} />
             <p hidden>
               <label>
                 Don&apos;t fill this out:{" "}
